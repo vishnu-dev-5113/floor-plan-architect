@@ -1,0 +1,20 @@
+/** Canvas colours (Konva needs literal colour strings, not CSS variables). */
+export const CANVAS = {
+  background: "#f4f6f8",
+  gridMinor: "#dfe5ea",
+  gridMajor: "#c3ccd4",
+  axis: "#9aa7b2",
+  wall: "#1f2937",
+  wallCore: "#0f172a",
+  room: "rgba(59,130,246,0.06)",
+  roomStroke: "#b6c2ce",
+  roomLabel: "#334155",
+  door: "#1d4ed8",
+  window: "#0f766e",
+  dimension: "#b45309",
+  text: "#0f172a",
+  selection: "#06b6d4",
+  preview: "#0891b2",
+  snap: "#e11d48",
+  measure: "#7c3aed",
+};
