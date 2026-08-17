@@ -27,7 +27,8 @@ export function undo(history: History, current: FloorPlan) {
 
 export function redo(history: History, current: FloorPlan) {
   if (history.future.length === 0) return null;
-  const [next, ...rest] = history.future;
+  const next = history.future[0] as FloorPlan;
+  const rest = history.future.slice(1);
   return {
     plan: next,
     history: { past: [...history.past, current].slice(-MAX_HISTORY), future: rest },
