@@ -22,7 +22,6 @@ export function buildSVG(plan: FloorPlan): string {
       if (!visible(r.layerId)) continue;
       parts.push(
         `<rect x="${r.position.x}" y="${r.position.y}" width="${r.width}" height="${r.height}" fill="#eef2f6" stroke="#c2ccd6" stroke-width="20"/>`,
-challenge
       );
       parts.push(
         `<text x="${r.position.x + r.width / 2}" y="${r.position.y + r.height / 2}" font-size="300" text-anchor="middle" fill="#334155">${esc(r.name)}</text>`,
