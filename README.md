@@ -1,144 +1,225 @@
-# Floor Plan Architect
+# 2D House Plan / CAD-Style Floor Plan Editor
+
+A desktop-first React application for creating, viewing, editing, measuring, saving, and exporting 2D architectural house/floor plans.
+
+The application is designed as a lightweight CAD-style floor-plan editor for a POC. It uses **FloorPlan JSON as the canonical source of truth**, while **Konva + React-Konva** are responsible for rendering and interacting with the drawing.
+
+---
+
+## Table of Contents
+
+- [1. Project Overview](#1-project-overview)
+- [2. Goals of Version One](#2-goals-of-version-one)
+- [3. Technology Stack](#3-technology-stack)
+- [4. Core Architecture](#4-core-architecture)
+- [5. FloorPlan JSON Model](#5-floorplan-json-model)
+- [6. Version One Features](#6-version-one-features)
+- [7. Getting Started](#7-getting-started)
+- [8. Application Interface](#8-application-interface)
+- [9. Working With the Drawing Canvas](#9-working-with-the-drawing-canvas)
+- [10. Creating a New House Plan](#10-creating-a-new-house-plan)
+- [11. Drawing Walls](#11-drawing-walls)
+- [12. Adding Doors](#12-adding-doors)
+- [13. Adding Windows](#13-adding-windows)
+- [14. Creating Rooms](#14-creating-rooms)
+- [15. Adding Dimensions](#15-adding-dimensions)
+- [16. Measuring a Plan](#16-measuring-a-plan)
+- [17. Adding Text and Annotations](#17-adding-text-and-annotations)
+- [18. Selection and Editing](#18-selection-and-editing)
+- [19. Snapping and Orthogonal Drawing](#19-snapping-and-orthogonal-drawing)
+- [20. Layers](#20-layers)
+- [21. Undo and Redo](#21-undo-and-redo)
+- [22. View Mode and Design Mode](#22-view-mode-and-design-mode)
+- [23. Saving and Loading Plans](#23-saving-and-loading-plans)
+- [24. Exporting Created Drawings](#24-exporting-created-drawings)
+- [25. Viewing and Editing Existing Plans](#25-viewing-and-editing-existing-plans)
+- [26. Supported Plan Types in V1](#26-supported-plan-types-in-v1)
+- [27. What Can Be Designed in V1](#27-what-can-be-designed-in-v1)
+- [28. What V1 Does Not Support](#28-what-v1-does-not-support)
+- [29. CAD / DXF / DWG Strategy](#29-cad--dxf--dwg-strategy)
+- [30. Recommended Workflow](#30-recommended-workflow)
+- [31. Project Structure](#31-project-structure)
+- [32. Data Flow](#32-data-flow)
+- [33. Future Enhancements](#33-future-enhancements)
+- [34. POC Limitations](#34-poc-limitations)
+- [35. Conclusion](#35-conclusion)
+
+---
+
+# 1. Project Overview
+
+The **2D House Plan / CAD-Style Floor Plan Editor** is a browser-based application for drafting and viewing residential 2D floor plans.
+
+The primary purpose of Version One is to provide a practical drawing workspace where a user can create a floor plan using architectural primitives such as:
+
+- Walls
+- Doors
+- Windows
+- Rooms
+- Dimensions
+- Text annotations
+- Measurement tools
+- Layers
 
-Build a 2D House Plan / CAD-Style Floor Plan Editor
+The application is not intended to replace AutoCAD or other professional architectural CAD software in Version One.
 
-Build a desktop-first web application for creating, editing, viewing, saving, and exporting 2D architectural house/floor plans.
+Instead, it provides the core functionality required for a lightweight 2D house-plan drafting POC.
 
-This is a functional POC, not a marketing website or a generic drawing/whiteboard application.
+The editor is based on a **world-coordinate system using millimeters**, allowing dimensions to represent real architectural measurements rather than browser pixels.
 
-The application should behave like a lightweight 2D CAD/floor-plan editor.
+---
+
+# 2. Goals of Version One
+
+The main goals of V1 are:
+
+1. Provide a CAD-style 2D drawing workspace.
+2. Allow users to create basic residential floor plans.
+3. Allow users to open and edit plans stored in the application's JSON format.
+4. Provide accurate world-coordinate geometry.
+5. Support walls, doors, windows, rooms, dimensions, and annotations.
+6. Provide grid and snapping functionality.
+7. Provide zoom and pan.
+8. Provide undo and redo.
+9. Provide layer visibility and locking.
+10. Allow plans to be saved and loaded as FloorPlan JSON.
+11. Allow drawings to be exported to PNG and SVG.
+12. Establish a clean architecture for future DXF/DWG interoperability.
+13. Keep the drawing editor independent from CAD file-format conversion.
+
+The most important architectural principle is:
+
+```text
+FloorPlan JSON
+      |
+      +----> Konva / React-Konva
+      |          |
+      |          +----> Interactive 2D Editor
+      |
+      +----> JSON Export
+      |
+      +----> SVG Export
+      |
+      +----> PNG Export
+      |
+      +----> DXF Export
+      |
+      +----> DWG Conversion Layer
+```
 
-The user must be able to:
+---
 
-View a 2D house plan
+# 3. Technology Stack
 
-Create/draft a 2D house plan
+## Frontend
 
-Draw walls
+- React
+- Vite
+- TypeScript
 
-Add doors
+## 2D Rendering
 
-Add windows
+- Konva
+- React-Konva
 
-Create rooms
+## State Management
 
-Add dimensions
+- Zustand
 
-Measure distances
+## Storage
 
-Add text annotations
+Version One can use:
 
-Select and modify objects
+- FloorPlan JSON files
+- Browser localStorage for local persistence
 
-Delete objects
+A backend/database is not required for the core V1 editor.
 
-Zoom and pan
+## CAD Architecture
 
-Use a grid
+CAD import/export is isolated from the drawing engine.
 
-Snap objects to the grid and existing geometry
+This allows future integration with:
 
-Undo/redo changes
+- DXF parsers/exporters
+- DWG conversion services
+- Backend CAD processing
+- Database persistence
 
-Save/load the floor plan
+---
 
-Export the floor plan
+# 4. Core Architecture
 
-Prepare the floor plan for CAD formats such as DXF/DWG
+The application follows a model-driven architecture.
 
-1. Technology Stack
+The **FloorPlan JSON model is the source of truth**.
 
-Use:
+Konva is not the database and is not the permanent project format.
 
-React
+## High-Level Architecture
 
-Vite
+```text
+                         React Application
+                                |
+                                v
+                       FloorPlan JSON Model
+                                |
+               +----------------+----------------+
+               |                                 |
+               v                                 v
+        React-Konva Renderer                Import / Export
+               |                                 |
+               v                    +------------+-------------+
+        Interactive Canvas          |            |             |
+                                    v            v             v
+                                  JSON         SVG           CAD
+                                                               |
+                                                          DXF / DWG
+```
 
-TypeScript
+## Why this architecture?
 
-npm
+A house plan is architectural data, not merely a collection of canvas pixels.
 
-react-konva
+For example:
 
-konva
+```json
+{
+  "id": "wall-001",
+  "type": "wall",
+  "start": {
+    "x": 0,
+    "y": 0
+  },
+  "end": {
+    "x": 4000,
+    "y": 0
+  },
+  "thickness": 200
+}
+```
 
-Zustand for application state if state management is needed
+This object describes a 4000 mm wall.
 
-Install:
+The same object can then be:
 
-npm install konva react-konva zustand
+- rendered by Konva
+- exported to SVG
+- converted to DXF
+- converted to DWG
+- saved to a database
+- used by another renderer in the future
 
+---
 
-Use React-Konva + Konva as the 2D rendering and interaction engine.
+# 5. FloorPlan JSON Model
 
-Do NOT use:
+The general V1 model is:
 
-Fabric.js
-
-PixiJS
-
-Paper.js
-
-Three.js
-
-another canvas rendering framework
-
-The primary drawing engine must be Konva.
-
-2. MOST IMPORTANT ARCHITECTURAL REQUIREMENT
-
-The application must use a domain-based FloorPlan JSON model as the single source of truth.
-
-The architecture must be:
-
-                  FloorPlan JSON
-                       │
-          ┌────────────┴────────────┐
-          │                         │
-          ↓                         ↓
-   Konva Renderer             Export/Import
-          │                         │
-          ↓                  ┌──────┼──────┐
-      2D Editor              ↓      ↓      ↓
-                           JSON    DXF    DWG
-
-
-Konva must NOT be the source of truth.
-
-Do NOT make the serialized Konva Stage the application's main project format.
-
-Do NOT design the application around Konva's internal node structure.
-
-The application domain model must be independent of Konva.
-
-This is extremely important because the same FloorPlan JSON must eventually be usable for:
-
-Konva rendering
-
-SVG export
-
-PNG export
-
-DXF export
-
-DWG export/conversion
-
-backend persistence
-
-future database storage
-
-future 3D conversion
-
-3. FloorPlan Domain Model
-
-Create a strongly typed domain model.
-
-Example:
-
+```ts
 interface FloorPlan {
   id: string;
   name: string;
-
   version: number;
 
   units: "mm" | "cm" | "m";
@@ -157,12 +238,11 @@ interface FloorPlan {
     updatedAt: string;
   };
 }
+```
 
+## Wall
 
-All architectural objects must have unique IDs.
-
-Example wall:
-
+```ts
 interface Wall {
   id: string;
   type: "wall";
@@ -181,276 +261,11 @@ interface Wall {
 
   layerId: string;
 }
+```
 
+## Door
 
-Use millimeters as the internal coordinate system.
-
-For example:
-
-Wall:
-start = { x: 0, y: 0 }
-end   = { x: 4000, y: 0 }
-
-Length = 4000 mm
-
-
-Never use screen pixels as the actual architectural measurement.
-
-4. Coordinate System
-
-Implement a proper CAD-style world coordinate system.
-
-There must be two coordinate systems:
-
-World coordinates
-       ↓
-Viewport transformation
-       ↓
-Screen coordinates
-
-
-And the reverse:
-
-Mouse screen coordinates
-       ↓
-Inverse viewport transformation
-       ↓
-World coordinates
-
-
-Create reusable geometry utilities:
-
-worldToScreen()
-screenToWorld()
-distance()
-angle()
-snapPoint()
-
-
-The viewport should contain:
-
-interface Viewport {
-  x: number;
-  y: number;
-  zoom: number;
-}
-
-
-5. Application Layout
-
-Create a professional CAD-style desktop interface.
-
-┌─────────────────────────────────────────────────────────────────────┐
-│ File │ Edit │ View │ Draw │ Tools │ Export                          │
-├─────────────────────────────────────────────────────────────────────┤
-│ Select │ Wall │ Door │ Window │ Room │ Dimension │ Measure │ Text  │
-├───────────────┬────────────────────────────────────┬────────────────┤
-│               │                                    │                │
-│ Tool /        │                                    │ Properties     │
-│ Layers        │          2D DRAWING AREA           │                │
-│               │                                    │                │
-│               │          Grid + Floor Plan         │                │
-│               │                                    │                │
-├───────────────┴────────────────────────────────────┴────────────────┤
-│ X: 1200 mm │ Y: 850 mm │ Zoom: 100% │ Snap: ON │ Units: mm         │
-└─────────────────────────────────────────────────────────────────────┘
-
-
-Open directly into the editor.
-
-Do not create a landing page.
-
-6. Konva Rendering Architecture
-
-Use the following conceptual layers:
-
-Konva Stage
-│
-├── Grid Layer
-├── Floor Plan Layer
-├── Dimensions Layer
-├── Selection Layer
-└── Preview Layer
-
-
-Suggested React components:
-
-FloorPlanCanvas
-├── GridLayer
-├── WallsLayer
-├── DoorsLayer
-├── WindowsLayer
-├── RoomsLayer
-├── DimensionsLayer
-├── TextLayer
-├── SelectionLayer
-└── PreviewLayer
-
-
-Each renderer receives objects from FloorPlan JSON.
-
-Example:
-
-FloorPlan.walls
-      ↓
-WallsLayer
-      ↓
-Konva Line / Shape
-
-
-Do not store independent architectural data inside the Konva nodes.
-
-7. Grid
-
-Implement a CAD-style grid.
-
-Requirements:
-
-visible grid
-
-major/minor grid
-
-configurable spacing
-
-grid toggle
-
-snap toggle
-
-grid remains usable at different zoom levels
-
-Default:
-
-Grid spacing = 100 mm
-
-
-The grid must be generated from world coordinates.
-
-8. Zoom and Pan
-
-Implement:
-
-mouse wheel zoom
-
-zoom around cursor
-
-zoom in
-
-zoom out
-
-fit drawing
-
-reset view
-
-pan
-
-zoom percentage display
-
-Toolbar:
-
-[-] 100% [+] [Fit]
-
-
-Use viewport transformations.
-
-Do not modify every object's world coordinates when zooming or panning.
-
-9. Wall Tool
-
-The Wall tool is the primary drawing feature.
-
-Workflow:
-
-Select Wall
-     ↓
-Click start point
-     ↓
-Move mouse
-     ↓
-Preview wall
-     ↓
-Click end point
-     ↓
-Create Wall in FloorPlan JSON
-     ↓
-Konva automatically renders updated model
-
-
-Default:
-
-Wall thickness = 200 mm
-
-
-Support:
-
-horizontal
-
-vertical
-
-arbitrary angle
-
-orthogonal mode
-
-endpoint snapping
-
-grid snapping
-
-selection
-
-moving
-
-editing
-
-deleting
-
-Wall length must be calculated from geometry.
-
-Do not store manually entered length as the authoritative value.
-
-10. Orthogonal Drawing
-
-Provide an orthogonal mode.
-
-When enabled, constrain wall angles to:
-
-0°
-90°
-180°
-270°
-
-
-Allow the user to toggle it from the toolbar.
-
-11. Selection
-
-Implement a Select tool.
-
-Users can:
-
-select objects
-
-move objects
-
-delete objects
-
-inspect properties
-
-edit properties
-
-Selected objects should have a clear visual highlight.
-
-Maintain:
-
-selectedObjectIds: string[]
-
-
-Do not make Konva selection state the application source of truth.
-
-12. Door
-
-Create architectural door objects.
-
-Model:
-
+```ts
 interface Door {
   id: string;
   type: "door";
@@ -461,42 +276,16 @@ interface Door {
   };
 
   width: number;
-
   rotation: number;
-
   swing: "left" | "right";
 
   layerId: string;
 }
+```
 
+## Window
 
-Default:
-
-900 mm
-
-
-Render:
-
-door leaf
-
-opening/swing arc
-
-Allow:
-
-move
-
-rotate
-
-change width
-
-change swing
-
-delete
-
-13. Window
-
-Model:
-
+```ts
 interface Window {
   id: string;
   type: "window";
@@ -507,80 +296,32 @@ interface Window {
   };
 
   width: number;
-
   rotation: number;
 
   layerId: string;
 }
+```
 
+## Room
 
-Default:
+A V1 room is primarily a rectangular room object.
 
-1200 mm
+Typical properties include:
 
+- room name
+- position
+- width
+- height
+- calculated area
+- layer
 
-Render using a simple architectural window symbol.
+## Dimension
 
-14. Room
+A dimension stores its geometric references rather than only storing a text value.
 
-V1 should support rectangular rooms.
+For example:
 
-Properties:
-
-name
-
-width
-
-height
-
-area
-
-position
-
-Example:
-
-Living Room
-
-5000 × 4000 mm
-
-Area: 20.00 m²
-
-
-Area must be calculated from geometry.
-
-The room label should be rendered on the drawing.
-
-15. Dimension Tool
-
-Implement basic architectural dimensions.
-
-Workflow:
-
-Click point A
-     ↓
-Click point B
-     ↓
-Create Dimension object
-
-
-Display:
-
-<────────────────>
-      4000 mm
-
-
-Support:
-
-horizontal
-
-vertical
-
-aligned dimensions where practical
-
-Dimension values must be calculated from world coordinates.
-
-Example:
-
+```ts
 interface Dimension {
   id: string;
   type: "dimension";
@@ -592,147 +333,618 @@ interface Dimension {
 
   layerId: string;
 }
+```
 
+The displayed value is calculated from the geometry.
 
-Do not store only the displayed string "4000 mm".
+---
 
-16. Measurement Tool
+# 6. Version One Features
 
-Implement temporary measurement.
+## Drawing
 
-Display:
+- 2D drawing canvas
+- CAD-style grid
+- World coordinates
+- Millimeter-based dimensions
+- Wall drawing
+- Door placement
+- Window placement
+- Rectangular rooms
+- Text annotations
+- Dimensions
+- Measurement
 
-Distance: 4250 mm
-Angle: 90°
+## Navigation
 
+- Zoom in
+- Zoom out
+- Zoom around cursor
+- Pan
+- Fit drawing to screen
+- Reset view
 
-Measurement should be calculated from world geometry.
+## Editing
 
-17. Text Tool
+- Object selection
+- Object movement
+- Object deletion
+- Wall thickness editing
+- Door width editing
+- Window width editing
+- Room editing
+- Text editing
+- Dimension editing
 
-Allow text annotations.
+## Precision
 
-Properties:
+- Grid snapping
+- Endpoint snapping
+- Midpoint snapping
+- Orthogonal drawing
+- Accurate distance calculation
+- Angle calculation
 
-text
+## Project Management
 
-position
+- New plan
+- Save JSON
+- Load JSON
+- Local autosave
+- Undo
+- Redo
 
-font size
+## Layers
 
-rotation
+Default V1 layers:
 
-alignment
+- Walls
+- Doors
+- Windows
+- Rooms
+- Dimensions
+- Annotations
+- Furniture
+
+Layers can be:
+
+- visible/hidden
+- locked/unlocked
+
+## Export
+
+V1 export architecture supports:
+
+- JSON
+- PNG
+- SVG
+- DXF integration point
+- DWG integration point/conversion layer
+
+---
+
+# 7. Getting Started
+
+## Prerequisites
+
+Install:
+
+- Node.js
+- npm
+
+Verify:
+
+```bash
+node -v
+npm -v
+```
+
+## Install dependencies
+
+From the project directory:
+
+```bash
+npm install
+```
+
+The core drawing dependencies are:
+
+```bash
+npm install konva react-konva zustand
+```
+
+## Run development server
+
+```bash
+npm run dev
+```
+
+Open the URL shown by Vite in the browser.
+
+Typical Vite development URL:
+
+```text
+http://localhost:5173
+```
+
+## Build for production
+
+```bash
+npm run build
+```
+
+## Preview production build
+
+```bash
+npm run preview
+```
+
+---
+
+# 8. Application Interface
+
+The application is divided into several areas.
+
+```text
++-------------------------------------------------------------------+
+| File | Edit | View | Draw | Tools | Export                        |
++-------------------------------------------------------------------+
+| Select | Wall | Door | Window | Room | Dimension | Measure | Text |
++-------------+---------------------------------------+-------------+
+|             |                                       |             |
+| Tool /      |                                       | Properties  |
+| Layers      |              Drawing Canvas            |             |
+|             |                                       |             |
+|             |                                       |             |
++-------------+---------------------------------------+-------------+
+| X: 1000 mm | Y: 800 mm | Zoom: 100% | Snap ON | Units: mm       |
++-------------------------------------------------------------------+
+```
+
+## Main Areas
+
+### Top menu
+
+Provides:
+
+- File operations
+- Editing commands
+- View commands
+- Drawing tools
+- Tools
+- Export
+
+### Drawing toolbar
+
+Provides:
+
+- Select
+- Wall
+- Door
+- Window
+- Room
+- Dimension
+- Measure
+- Text
+
+### Left panel
+
+Provides:
+
+- tools
+- layers
+- layer visibility
+- layer locking
+
+### Center canvas
+
+Contains:
+
+- grid
+- floor plan
+- dimensions
+- annotations
+- selection
+- drawing previews
+
+### Right properties panel
+
+Displays properties of the selected object.
+
+### Status bar
+
+Displays:
+
+- X coordinate
+- Y coordinate
+- zoom
+- snapping state
+- units
+
+---
+
+# 9. Working With the Drawing Canvas
+
+The canvas uses a world-coordinate system.
+
+The default internal unit is:
+
+```text
+millimeter (mm)
+```
 
 Example:
 
+```text
+4000 mm = 4 meters
+```
+
+The browser screen does not represent actual architectural dimensions.
+
+Instead:
+
+```text
+World coordinate
+      |
+      v
+Viewport transform
+      |
+      v
+Screen coordinate
+```
+
+This allows the user to zoom in/out without changing the actual dimensions of the plan.
+
+---
+
+# 10. Creating a New House Plan
+
+To create a new plan:
+
+1. Select **File → New**.
+2. Choose or confirm the project units.
+3. The default unit is millimeters.
+4. The drawing workspace opens with a grid.
+5. Select the Wall tool.
+6. Draw the external walls.
+7. Add internal walls.
+8. Add rooms.
+9. Add doors.
+10. Add windows.
+11. Add dimensions.
+12. Add annotations if required.
+13. Save the project as FloorPlan JSON.
+
+A basic plan can be created without entering every dimension manually because the application can calculate geometry from the drawing.
+
+---
+
+# 11. Drawing Walls
+
+Walls are the main architectural primitive.
+
+## Basic workflow
+
+1. Select **Wall**.
+2. Click the starting point.
+3. Move the mouse.
+4. A temporary wall preview is displayed.
+5. Click the ending point.
+6. The wall is added to the FloorPlan JSON.
+7. Konva renders the updated wall.
+
+Example:
+
+```text
+Start                         End
+  +-----------------------------+
+  |                             |
+  |         4000 mm             |
+  |                             |
+```
+
+## Wall properties
+
+A wall can have:
+
+- start X
+- start Y
+- end X
+- end Y
+- thickness
+- length
+
+Default thickness:
+
+```text
+200 mm
+```
+
+The length is calculated from the start and end points.
+
+---
+
+# 12. Adding Doors
+
+Select the **Door** tool.
+
+Place the door at the desired location.
+
+A door contains:
+
+- position
+- width
+- rotation
+- swing direction
+
+Default V1 width:
+
+```text
+900 mm
+```
+
+The visual representation contains:
+
+- door leaf
+- swing/opening arc
+
+The door can be:
+
+- moved
+- edited
+- deleted
+- rotated
+- resized
+
+---
+
+# 13. Adding Windows
+
+Select the **Window** tool.
+
+Place the window on the desired wall.
+
+A window contains:
+
+- position
+- width
+- rotation
+
+Default V1 width:
+
+```text
+1200 mm
+```
+
+The window can be:
+
+- moved
+- edited
+- deleted
+- resized
+- rotated
+
+---
+
+# 14. Creating Rooms
+
+V1 supports basic rectangular rooms.
+
+Select the **Room** tool.
+
+Create the room and specify:
+
+- position
+- width
+- height
+- room name
+
+Example:
+
+```text
+Living Room
+5000 mm × 4000 mm
+Area: 20.00 m²
+```
+
+Area is calculated automatically:
+
+```text
+Area = width × height
+```
+
+For example:
+
+```text
+5000 × 4000
+= 20,000,000 mm²
+= 20 m²
+```
+
+Room labels are displayed on the canvas.
+
+---
+
+# 15. Adding Dimensions
+
+Use the **Dimension** tool.
+
+Basic workflow:
+
+1. Select Dimension.
+2. Select the first point.
+3. Select the second point.
+4. Position the dimension offset.
+5. The dimension is displayed.
+
+Example:
+
+```text
+<---------------------------->
+            4000 mm
+```
+
+Dimension values are calculated from actual world coordinates.
+
+This means the dimension remains accurate when the geometry changes.
+
+Supported V1 dimension types:
+
+- horizontal
+- vertical
+- basic aligned dimensions where supported
+
+---
+
+# 16. Measuring a Plan
+
+The Measure tool provides temporary measurements.
+
+Workflow:
+
+1. Select Measure.
+2. Click the first point.
+3. Move the cursor.
+4. Click the second point.
+
+The application displays:
+
+```text
+Distance: 4250 mm
+Angle: 90°
+```
+
+Measurement is based on world coordinates.
+
+The measurement tool is useful for checking:
+
+- wall lengths
+- room dimensions
+- distances between objects
+- approximate angles
+
+---
+
+# 17. Adding Text and Annotations
+
+Use the **Text** tool.
+
+Text can be used for:
+
+- room names
+- notes
+- labels
+- entrance labels
+- architectural annotations
+
+Example:
+
+```text
 MASTER BEDROOM
+```
 
+Properties include:
 
-18. Properties Panel
+- text
+- position
+- font size
+- rotation
+- alignment
 
-When selecting an object, display editable properties.
+---
 
-Example wall:
+# 18. Selection and Editing
 
+Use the **Select** tool.
+
+Click any supported object.
+
+The selected object is highlighted and its properties are shown in the Properties panel.
+
+For example:
+
+```text
 WALL
+----------------
+Start X: 0 mm
+Start Y: 0 mm
+End X: 4000 mm
+End Y: 0 mm
+Length: 4000 mm
+Thickness: 200 mm
+```
 
-Start X     0 mm
-Start Y     0 mm
+Editing a property follows this flow:
 
-End X       4000 mm
-End Y       0 mm
-
-Length      4000 mm
-
-Thickness   200 mm
-
-[Apply]
-[Delete]
-
-
-When a property changes:
-
-Properties
-    ↓
+```text
+Properties Panel
+       |
+       v
 FloorPlan JSON
-    ↓
-React state update
-    ↓
-Konva rerender
+       |
+       v
+React State
+       |
+       v
+Konva Renderer
+       |
+       v
+Updated Drawing
+```
 
+This keeps the application model and drawing synchronized.
 
-Never directly modify Konva nodes as the only state update.
+---
 
-19. Snapping System
+# 19. Snapping and Orthogonal Drawing
 
-Create a reusable geometry snapping system.
+Precision drafting requires snapping.
 
-Support:
+## Grid snapping
 
-Grid snap
+Example:
 
-397 mm → 400 mm
-403 mm → 400 mm
+```text
+397 mm
+  |
+  v
+400 mm
+```
 
+The cursor snaps to the nearest configured grid point.
 
-Endpoint snap
+## Endpoint snapping
 
-Snap to existing wall endpoints.
+When drawing close to an existing wall endpoint, the cursor snaps to that endpoint.
 
-Midpoint snap
+This helps connect walls accurately.
 
-Snap to the midpoint of walls.
+## Midpoint snapping
 
-Create reusable logic:
+The editor can snap to the midpoint of an existing wall.
 
-snapPoint(
-  point,
-  floorPlan,
-  snapSettings
-)
+## Orthogonal mode
 
+Orthogonal mode constrains drawing to:
 
-Keep snapping logic independent from React and Konva.
+```text
+0°
+90°
+180°
+270°
+```
 
-20. Undo / Redo
+This is useful for conventional rectangular house plans.
 
-Implement:
+---
 
-Ctrl + Z
-Ctrl + Y
+# 20. Layers
 
+V1 provides a basic layer system.
 
-Track changes to the FloorPlan model.
+Default layers:
 
-Undo/redo must cover:
-
-create
-
-delete
-
-move
-
-resize
-
-edit properties
-
-rooms
-
-doors
-
-windows
-
-dimensions
-
-text
-
-The history should operate on domain-state changes, not Konva node state.
-
-21. Layers
-
-Create:
-
+```text
 Walls
 Doors
 Windows
@@ -740,42 +952,114 @@ Rooms
 Dimensions
 Annotations
 Furniture
+```
 
+Each layer supports:
 
-Each layer:
+### Visibility
 
-interface Layer {
-  id: string;
-  name: string;
-  visible: boolean;
-  locked: boolean;
-}
+Hide/show the entire layer.
 
+### Lock
 
-Allow:
-
-show/hide
-
-lock/unlock
-
-active layer
-
-Locked layers cannot be edited.
-
-22. FloorPlan JSON Persistence
-
-The JSON model is the primary project format for V1.
-
-Implement:
-
-New
-Open JSON
-Save JSON
-Save As JSON
-
+Prevent objects on a layer from being edited.
 
 Example:
 
+```text
+Walls        👁 🔓
+Doors        👁 🔓
+Windows      👁 🔓
+Dimensions   👁 🔒
+Annotations  👁 🔓
+```
+
+A locked layer remains visible but cannot be modified.
+
+---
+
+# 21. Undo and Redo
+
+The editor supports:
+
+```text
+Ctrl + Z
+```
+
+for undo and:
+
+```text
+Ctrl + Y
+```
+
+for redo.
+
+History covers:
+
+- drawing walls
+- deleting objects
+- moving objects
+- changing dimensions
+- changing properties
+- adding/removing doors
+- adding/removing windows
+- room changes
+- annotations
+
+History is based on changes to the FloorPlan model.
+
+---
+
+# 22. View Mode and Design Mode
+
+The application has two working modes.
+
+## Design Mode
+
+Used for drafting and editing.
+
+Available:
+
+- draw
+- select
+- move
+- resize
+- delete
+- dimensions
+- measurements
+- annotations
+
+## View Mode
+
+Used for inspecting a completed plan.
+
+Available:
+
+- zoom
+- pan
+- inspect
+- layer visibility
+- measurement
+
+Editing operations are disabled in View mode.
+
+Switch using:
+
+```text
+[ Design ] [ View ]
+```
+
+---
+
+# 23. Saving and Loading Plans
+
+## JSON is the primary V1 project format
+
+The application stores a floor plan as structured JSON.
+
+Example:
+
+```json
 {
   "version": 1,
   "units": "mm",
@@ -787,301 +1071,643 @@ Example:
   "texts": [],
   "layers": []
 }
+```
 
+## Save
 
-Validate imported JSON before loading it.
+Use:
 
-If invalid:
+```text
+File → Save
+```
 
-Invalid floor plan file.
+or:
 
+```text
+File → Save As JSON
+```
 
-Do not crash the application.
+The exported file contains the FloorPlan model.
 
-23. localStorage
+## Load
 
-For V1, automatically persist the current FloorPlan JSON to localStorage.
+Use:
 
-Use localStorage only as a convenience/autosave mechanism.
+```text
+File → Open JSON
+```
 
-The actual canonical project representation remains the FloorPlan JSON object.
+Select a previously exported FloorPlan JSON file.
 
-24. Export Architecture
+The application:
 
-Create a dedicated export abstraction:
+```text
+JSON File
+   |
+   v
+Validate JSON
+   |
+   v
+FloorPlan Model
+   |
+   v
+Konva Renderer
+   |
+   v
+Editable Drawing
+```
 
-interface FloorPlanExporter {
-  exportJSON(plan: FloorPlan): Blob;
-  exportSVG(plan: FloorPlan): Blob;
-  exportPNG(plan: FloorPlan): Blob;
-  exportDXF(plan: FloorPlan): Promise<Blob>;
-  exportDWG(plan: FloorPlan): Promise<Blob>;
-}
+This means a previously saved project can be opened and edited again.
 
+## Local autosave
 
-The important requirement is:
+The current plan can also be stored in browser localStorage.
 
+This protects against accidental refreshes during a working session.
+
+---
+
+# 24. Exporting Created Drawings
+
+V1 provides multiple export paths.
+
+## 24.1 JSON Export
+
+JSON is the most important export for project persistence.
+
+Use it when you want to:
+
+- save the project
+- reopen it later
+- transfer the project to another application
+- send the project to a backend
+- preserve editable architectural data
+
+JSON preserves the FloorPlan model.
+
+---
+
+## 24.2 PNG Export
+
+PNG is intended for:
+
+- quick sharing
+- screenshots
+- documentation
+- presentations
+- image previews
+
+The PNG represents the visible drawing.
+
+PNG is raster-based and should not be considered a CAD/editable format.
+
+---
+
+## 24.3 SVG Export
+
+SVG is a vector export.
+
+It is useful for:
+
+- vector documentation
+- web usage
+- design previews
+- further vector processing
+
+The SVG should be generated from the FloorPlan model rather than simply taking a screenshot of the canvas.
+
+---
+
+## 24.4 DXF Export
+
+DXF is intended for CAD interoperability.
+
+The intended pipeline is:
+
+```text
 FloorPlan JSON
-      │
-      ├── JSON Exporter
-      ├── SVG Exporter
-      ├── PNG Exporter
-      ├── DXF Exporter
-      └── DWG Exporter
+      |
+      v
+DXF Exporter
+      |
+      v
+DXF
+```
 
-
-Do not convert:
-
-Konva → DWG
-
-
-Instead:
-
-FloorPlan JSON → DWG
-
-
-This is a critical architectural requirement.
-
-25. PNG Export
-
-Use Konva's export functionality where appropriate.
-
-The PNG should represent the visible floor plan.
-
-Allow export of the drawing area.
-
-26. SVG Export
-
-Create SVG directly from the FloorPlan model.
-
-Do not simply screenshot the Konva canvas.
+The DXF exporter maps application objects to CAD entities.
 
 For example:
 
-Wall → SVG line/path
-Door → SVG line/path/arc
-Window → SVG elements
-Dimension → SVG lines + text
-Room → SVG shape + text
-
-
-This ensures the SVG remains vector-based.
-
-27. DXF Export
-
-Create a dedicated DXF exporter.
-
-The exporter must read the FloorPlan model.
-
-Example mapping:
-
+```text
 Wall       → LINE / POLYLINE
-Window     → LINE / POLYLINE
 Door       → LINE + ARC
+Window     → LINE / POLYLINE
 Dimension  → LINE + TEXT
 Text       → TEXT
+```
 
+DXF support should be treated as a CAD export layer, not as the application's internal model.
 
-Do not couple this implementation to Konva.
+---
 
-If full DXF support requires an additional open-source package, evaluate and use an appropriate MIT/BSD/GPL-compatible library only if its license is compatible with this POC.
+## 24.5 DWG Export
 
-Document the selected dependency and its license.
+DWG is not the primary project format.
 
-28. DWG Export
+The intended architecture is:
 
-DWG is NOT the foundation of the application.
+```text
+FloorPlan JSON
+      |
+      v
+DWG Conversion Layer
+      |
+      v
+DWG
+```
 
-Do not make the editor depend on DWG.
+The application must never:
 
-Create a dedicated DWG export interface:
+- rename a DXF file to `.dwg`
+- rename an SVG file to `.dwg`
+- generate a fake DWG file
+- claim a file is DWG when it is not
 
-exportDWG(plan: FloorPlan): Promise<Blob>
+If reliable DWG conversion is not available in the browser, the application should use a backend CAD conversion service in the future.
 
+The future architecture can be:
 
-The implementation should be isolated.
-
-Do not:
-
-rename DXF to DWG
-
-rename SVG to DWG
-
-generate a fake DWG
-
-create an invalid DWG file
-
-If reliable browser-side DWG generation is not possible with open-source tooling, implement the exporter as a clearly isolated service adapter/stub and display:
-
-DWG export requires the CAD conversion service.
-
-
-The rest of the application must work normally without DWG.
-
-Design the API so that a backend DWG conversion service can be added later.
-
-29. Future CAD Conversion Architecture
-
-Prepare for this future architecture:
-
+```text
 React Application
-       │
-       ↓
+       |
+       v
 FloorPlan JSON
-       │
-       ↓
-Backend CAD Service
-       │
-       ├── DXF
-       └── DWG
-
-
-The frontend should not need to understand the internal DWG binary format.
-
-Possible future endpoint:
-
+       |
+       v
 POST /api/cad/export/dwg
+       |
+       v
+CAD Conversion Service
+       |
+       v
+DWG File
+```
 
+---
 
-Request:
+# 25. Viewing and Editing Existing Plans
 
-{
-  "floorPlan": {}
-}
+There are two important categories of existing plans.
 
+## A. Existing plans created by this application
 
-Response:
+These are the easiest to support.
 
-application/acad
+Workflow:
 
+```text
+Existing JSON
+      |
+      v
+Open JSON
+      |
+      v
+FloorPlan Model
+      |
+      v
+Konva
+      |
+      v
+View / Edit
+```
 
-Do not implement a backend unless required for the current POC.
+A previously saved JSON plan remains fully editable because the architectural objects are preserved as structured data.
 
-Just make the frontend architecture ready for it.
+You can modify:
 
-30. Import Architecture
+- walls
+- doors
+- windows
+- rooms
+- dimensions
+- text
+- layers
 
-Create:
+---
 
-interface FloorPlanImporter {
-  importJSON(file: File): Promise<FloorPlan>;
-  importSVG(file: File): Promise<FloorPlan>;
-  importDXF(file: File): Promise<FloorPlan>;
-  importDWG(file: File): Promise<FloorPlan>;
-}
+## B. Existing CAD plans
 
+Existing DXF/DWG files require a CAD import/conversion pipeline.
 
-The import pipeline should be:
+The desired architecture is:
 
-CAD file
-   ↓
-Importer
-   ↓
+```text
+DXF / DWG
+    |
+    v
+CAD Importer / Converter
+    |
+    v
 FloorPlan JSON
-   ↓
-Konva Renderer
+    |
+    v
+Konva
+    |
+    v
+View + Edit
+```
 
+The important point is that imported CAD geometry must be converted into the application's FloorPlan model.
 
-Never make:
+The editor should not directly depend on CAD file internals.
 
-DWG → Konva objects directly
+### V1 priority
 
+The recommended priority is:
 
-The FloorPlan model must remain the intermediate representation.
+1. Full JSON import/export
+2. SVG/PNG export
+3. DXF interoperability
+4. DWG interoperability through a conversion service
 
-For V1, prioritize:
+Full arbitrary DWG compatibility is outside the core browser editor responsibility.
 
-JSON import
+---
 
-JSON export
+# 26. Supported Plan Types in V1
 
-SVG export
+Version One is intended primarily for **2D residential architectural floor plans**.
 
-PNG export
+The application can support plans such as:
 
-DXF architecture
-
-DWG architecture
-
-Actual DWG import/export can be connected through a backend converter later.
-
-31. View Mode
-
-Implement two modes:
-
-[ Design ] [ View ]
-
-
-Design
-
-Allow:
-
-create
-
-edit
-
-delete
-
-move
-
-dimensions
-
-measurements
-
-View
-
-Allow:
-
-zoom
-
-pan
-
-layer visibility
-
-measurements
-
-Disable editing in View mode.
-
-32. Sample Floor Plan
-
-Preload a realistic sample plan.
+### Single-floor house
 
 Example:
 
-┌───────────────────────────────────┐
-│                                   │
-│          LIVING ROOM              │
-│                                   │
-│                         ┌─────────┤
-│                         │ BEDROOM │
-│                         │         │
-│                         └─────────┤
-│                                   │
-│          KITCHEN                  │
-│                                   │
-└───────────────────┬───────────────┘
-                    │
-                  ENTRY
+```text
++-------------------------------+
+|        Living Room            |
+|                               |
+|---------+---------------------|
+| Kitchen |      Bedroom        |
+|         |                     |
+|---------+---------------------|
+| Bedroom | Bathroom | Bedroom  |
++-------------------------------+
+```
 
+### Apartment floor plan
 
-Include:
+Suitable for:
 
-walls
+- 1 BHK
+- 2 BHK
+- 3 BHK
+- larger simple apartments
 
-doors
+### Small residential house
 
-windows
+Can represent:
 
-room labels
+- living room
+- dining room
+- kitchen
+- bedrooms
+- bathrooms
+- toilets
+- utility areas
+- corridors
+- entrance
+- balconies
 
-dimensions
+### Basic office layout
 
-Use realistic millimeter measurements.
+The same 2D primitives can be used for:
 
-33. Project Structure
+- rooms
+- partitions
+- doors
+- windows
+- labels
 
-Use a modular architecture:
+### Simple commercial layout
 
+The V1 engine can represent basic spaces such as:
+
+- shops
+- small offices
+- reception areas
+- storage areas
+
+However, the application is primarily optimized for residential house plans.
+
+---
+
+# 27. What Can Be Designed in V1
+
+The following types of designs can be created using the V1 primitives.
+
+## Exterior Walls
+
+Examples:
+
+- rectangular houses
+- L-shaped layouts
+- simple irregular layouts
+- extensions
+
+## Interior Walls
+
+Examples:
+
+- bedroom partitions
+- kitchen partitions
+- bathroom partitions
+- corridor walls
+- utility partitions
+
+## Rooms
+
+Examples:
+
+- Living Room
+- Dining Room
+- Kitchen
+- Master Bedroom
+- Bedroom
+- Bathroom
+- Toilet
+- Study Room
+- Pooja Room
+- Utility Room
+- Store Room
+- Balcony
+- Corridor
+
+## Doors
+
+Examples:
+
+- Main entrance
+- Bedroom doors
+- Bathroom doors
+- Kitchen doors
+- Utility doors
+
+## Windows
+
+Examples:
+
+- bedroom windows
+- living room windows
+- kitchen windows
+- bathroom windows
+
+## Dimensions
+
+Examples:
+
+```text
+Room width: 4000 mm
+Wall length: 5000 mm
+Door width: 900 mm
+Window width: 1200 mm
+```
+
+## Annotations
+
+Examples:
+
+```text
+LIVING ROOM
+MASTER BEDROOM
+ENTRY
+KITCHEN
+UTILITY
+```
+
+---
+
+# 28. What V1 Does Not Support
+
+V1 is intentionally limited to 2D floor-plan drafting.
+
+The following are not core V1 capabilities.
+
+## 3D modeling
+
+Not supported:
+
+- 3D walls
+- 3D furniture
+- 3D roofs
+- 3D elevations
+- 3D walkthroughs
+
+## Structural engineering
+
+Not supported:
+
+- column design calculations
+- beam design
+- footing design
+- structural analysis
+- reinforcement detailing
+
+## MEP design
+
+Not supported as a dedicated system:
+
+- electrical circuits
+- plumbing calculations
+- HVAC
+- detailed mechanical layouts
+
+Basic 2D annotations can still represent these concepts, but there is no specialized MEP engine.
+
+## Professional AutoCAD feature parity
+
+V1 does not attempt to reproduce every AutoCAD feature.
+
+Not included:
+
+- full AutoCAD command system
+- advanced block system
+- XREF
+- advanced hatch engine
+- advanced linetypes
+- advanced dimension styles
+- dynamic blocks
+- parametric constraints
+- full CAD layer standards
+- complete DWG compatibility
+
+## Advanced geometry
+
+Not a primary V1 goal:
+
+- complex Boolean geometry
+- splines
+- advanced polylines
+- complex arcs
+- advanced curve editing
+- advanced geometric constraints
+
+---
+
+# 29. CAD / DXF / DWG Strategy
+
+The application deliberately separates CAD formats from the drawing model.
+
+## Internal format
+
+```text
+FloorPlan JSON
+```
+
+## Rendering format
+
+```text
+Konva
+```
+
+## Exchange formats
+
+```text
+JSON
+SVG
+PNG
+DXF
+DWG
+```
+
+The architecture is:
+
+```text
+                     FloorPlan JSON
+                           |
+              +------------+------------+
+              |            |            |
+              v            v            v
+            Konva        SVG/PNG       CAD
+              |                         |
+              v                    +----+----+
+         Web Editor               DXF       DWG
+```
+
+This provides several advantages.
+
+### Advantage 1: Renderer independence
+
+Konva can be replaced later without changing the FloorPlan data model.
+
+### Advantage 2: CAD independence
+
+The application does not need to understand DWG while the user is editing.
+
+### Advantage 3: Backend support
+
+The same FloorPlan JSON can be sent to a backend.
+
+### Advantage 4: Database support
+
+The model can eventually be stored in PostgreSQL.
+
+### Advantage 5: Future 3D support
+
+The same model can later be extended to support 3D generation.
+
+---
+
+# 30. Recommended Workflow
+
+A typical V1 workflow is:
+
+## Step 1 — Start
+
+Open the application.
+
+## Step 2 — Create
+
+Select:
+
+```text
+File → New
+```
+
+## Step 3 — Establish exterior walls
+
+Use the Wall tool.
+
+Draw the main boundary.
+
+## Step 4 — Add internal walls
+
+Create bedrooms, kitchen, bathrooms, corridors, etc.
+
+## Step 5 — Add rooms
+
+Add room labels and dimensions.
+
+## Step 6 — Add doors
+
+Place doors at required openings.
+
+## Step 7 — Add windows
+
+Place windows on external walls.
+
+## Step 8 — Add dimensions
+
+Dimension important walls and rooms.
+
+## Step 9 — Measure
+
+Use the Measure tool to verify geometry.
+
+## Step 10 — Annotate
+
+Add text such as:
+
+```text
+ENTRY
+KITCHEN
+MASTER BEDROOM
+```
+
+## Step 11 — Organize
+
+Use layers to separate:
+
+- walls
+- doors
+- windows
+- dimensions
+- annotations
+
+## Step 12 — Save
+
+Save the FloorPlan JSON.
+
+## Step 13 — Export
+
+Choose the appropriate output:
+
+```text
+JSON → editable project
+SVG  → vector drawing
+PNG  → image/share
+DXF  → CAD interoperability
+DWG  → CAD conversion workflow
+```
+
+---
+
+# 31. Project Structure
+
+Recommended project structure:
+
+```text
 src/
 ├── components/
 │   ├── layout/
@@ -1149,310 +1775,292 @@ src/
 │   └── dwgExporter.ts
 │
 └── utils/
-
-
-Do not put the entire application into App.tsx.
-
-34. State Management
-
-Use Zustand.
-
-Store:
-
-floorPlan
-activeTool
-selectedObjectIds
-viewport
-gridSettings
-snapSettings
-activeLayerId
-history
-mode
-
-
-Separate:
-
-Domain state
-
-
-from:
-
-UI state
-
-
-The FloorPlan object must remain serializable.
-
-35. Keyboard Shortcuts
-
-Implement:
-
-V → Select
-W → Wall
-D → Door
-N → Window
-R → Room
-M → Measure
-T → Text
-
-Delete / Backspace → Delete selected object
-
-Ctrl + Z → Undo
-Ctrl + Y → Redo
-
-Esc → Cancel current operation
-
-Space + drag → Pan
-
-Mouse wheel → Zoom
-
-
-36. Performance
-
-The editor should remain responsive with hundreds or thousands of 2D objects.
-
-Requirements:
-
-use appropriate Konva layers
-
-avoid unnecessary React rerenders
-
-use refs for transient mouse state where appropriate
-
-avoid unnecessary global state updates on every mousemove
-
-disable hit detection for purely visual/static grid elements where appropriate
-
-keep geometry calculations separate from rendering
-
-37. Error Handling
-
-Handle:
-
-invalid JSON
-
-unsupported file versions
-
-malformed floor-plan data
-
-invalid geometry
-
-failed exports
-
-unsupported DXF/DWG entities
-
-unsupported CAD versions
-
-Never silently fail.
-
-Show user-friendly error messages.
-
-38. UI Requirements
-
-Make the interface professional and compact.
-
-Do NOT create:
-
-marketing pages
-
-pricing pages
-
-landing page
-
-unnecessary animations
-
-large hero sections
-
-excessive card layouts
-
-The editor should be the main application.
-
-Use:
-
-compact toolbar
-
-clear icons with tooltips
-
-properties panel
-
-layer panel
-
-status bar
-
-keyboard shortcuts
-
-professional CAD-like workspace
-
-39. Acceptance Criteria
-
-V1 is successful when the user can:
-
-Viewing
-
-Open a sample house plan.
-
-Zoom.
-
-Pan.
-
-Fit drawing to screen.
-
-Toggle layers.
-
-Switch to View mode.
-
-Drafting
-
-Create walls.
-
-Draw horizontal walls.
-
-Draw vertical walls.
-
-Draw angled walls.
-
-Use orthogonal mode.
-
-Snap to grid.
-
-Snap to endpoints.
-
-Add doors.
-
-Add windows.
-
-Add rooms.
-
-Add text.
-
-Add dimensions.
-
-Measure distances.
-
-Editing
-
-Select objects.
-
-Move objects.
-
-Modify wall thickness.
-
-Modify door/window dimensions.
-
-Modify room properties.
-
-Delete objects.
-
-Undo.
-
-Redo.
-
-Persistence
-
-Save FloorPlan JSON.
-
-Load FloorPlan JSON.
-
-Automatically persist the current plan locally.
-
-Export
-
-Export JSON.
-
-Export PNG.
-
-Export SVG.
-
-Have a dedicated DXF exporter architecture.
-
-Have a dedicated DWG exporter architecture.
-
-Never generate fake/corrupt DWG files.
-
-Architecture
-
-FloorPlan JSON is the single source of truth.
-
-Konva is only the rendering/interaction layer.
-
-Geometry logic is independent from React components.
-
-Import/export logic is independent from Konva.
-
-Future backend DWG conversion can be added without rewriting the editor.
-
-40. Implementation Priority
-
-Build in this exact order:
-
-1. Vite + React + TypeScript
-2. Application shell
-3. Zustand store
-4. FloorPlan domain model
-5. Konva Stage
-6. World coordinate system
-7. Screen/world coordinate conversion
-8. Grid
-9. Zoom/pan
-10. Wall drawing
-11. Wall selection/editing
-12. Grid snapping
-13. Endpoint snapping
-14. Doors
-15. Windows
-16. Rooms
-17. Dimensions
-18. Measurement
-19. Text
-20. Layers
-21. Undo/redo
-22. JSON save/load
-23. localStorage autosave
-24. SVG export
-25. PNG export
-26. DXF exporter abstraction
-27. DWG exporter abstraction
-28. View mode
-29. Error handling
-30. Final UI polish
-
-
-Do not skip the FloorPlan domain model and build directly around Konva nodes.
-
-The key architectural rule is:
-
-                FLOOR PLAN JSON
-                       │
-                       │
-              ┌────────┴────────┐
-              │                 │
-              ▼                 ▼
-          KONVA VIEWER      EXPORTERS
-              │                 │
-              ▼          ┌──────┼──────┐
-          2D EDITOR      JSON   DXF    DWG
-
-
-The editor must remain fully functional even when DWG conversion is not available.
-
-Build the V1 POC around this architecture.
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/b6b73703-e1fd-4cad-acaf-8d310ed84edd).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
 ```
+
+---
+
+# 32. Data Flow
+
+## Drawing a wall
+
+```text
+User
+ |
+ | Click Wall
+ v
+Wall Tool
+ |
+ | mouse coordinates
+ v
+screenToWorld()
+ |
+ v
+SnapManager
+ |
+ v
+Wall object
+ |
+ v
+FloorPlan JSON
+ |
+ v
+Zustand
+ |
+ v
+WallsLayer
+ |
+ v
+Konva
+ |
+ v
+Visible wall
+```
+
+## Editing a wall
+
+```text
+User selects wall
+       |
+       v
+Properties Panel
+       |
+       v
+Update FloorPlan
+       |
+       v
+Zustand
+       |
+       v
+Konva Renderer
+       |
+       v
+Updated wall
+```
+
+## Exporting
+
+```text
+FloorPlan JSON
+       |
+       +------> JSON
+       |
+       +------> SVG
+       |
+       +------> PNG
+       |
+       +------> DXF
+       |
+       +------> DWG Conversion Service
+```
+
+---
+
+# 33. Future Enhancements
+
+After V1, the application can evolve toward a more complete architectural drafting system.
+
+Potential V2/V3 features include:
+
+## Advanced wall system
+
+- wall joins
+- automatic intersections
+- wall cleanup
+- wall offset
+- wall splitting
+- wall trimming
+
+## Advanced rooms
+
+- polygon rooms
+- automatic room detection
+- automatic area calculation from wall boundaries
+- irregular room shapes
+
+## Doors and windows
+
+- door libraries
+- window libraries
+- different door types
+- sliding doors
+- double doors
+- custom sizes
+- wall-aware placement
+
+## Furniture
+
+Add reusable objects:
+
+- bed
+- sofa
+- dining table
+- chair
+- toilet
+- wash basin
+- kitchen counter
+- wardrobe
+
+## Architectural symbols
+
+- north arrow
+- staircase
+- columns
+- sanitary fixtures
+- electrical symbols
+
+## Advanced dimensions
+
+- chained dimensions
+- baseline dimensions
+- radial dimensions
+- angular dimensions
+- dimension styles
+
+## CAD interoperability
+
+- stronger DXF support
+- DWG import
+- DWG export
+- CAD layer mapping
+- blocks
+- hatches
+- linetypes
+
+## Backend
+
+Potential architecture:
+
+```text
+React + Konva
+      |
+      v
+Node.js API
+      |
+      v
+PostgreSQL
+```
+
+The FloorPlan JSON can be stored as:
+
+- JSONB
+- normalized relational tables
+- both, depending on requirements
+
+## Collaboration
+
+Future support could include:
+
+- multiple users
+- project sharing
+- permissions
+- version history
+- comments
+
+---
+
+# 34. POC Limitations
+
+Version One intentionally focuses on the core 2D drafting workflow.
+
+It should not be considered a replacement for professional architectural CAD software.
+
+The most important limitations are:
+
+1. 2D only.
+2. Primarily residential floor plans.
+3. Basic room geometry.
+4. Basic door/window symbols.
+5. Basic dimensions.
+6. Basic layers.
+7. Limited CAD entity support.
+8. DWG interoperability depends on a reliable conversion layer.
+9. Advanced AutoCAD features are outside V1.
+10. Structural, MEP, and construction-document workflows are not specialized features.
+
+The POC should prioritize:
+
+```text
+Correct geometry
++
+Good editing experience
++
+Reliable FloorPlan JSON
++
+Clean export architecture
+```
+
+over attempting to implement every CAD feature.
+
+---
+
+# 35. Conclusion
+
+Version One provides the foundation for a browser-based 2D house-plan drafting application.
+
+The core concept is:
+
+```text
+                 FLOORPLAN JSON
+                       |
+             +---------+---------+
+             |                   |
+             v                   v
+        React-Konva          Export Layer
+             |                   |
+             v              +----+----+----+
+        2D CAD Editor       |    |    |    |
+                            v    v    v    v
+                           JSON SVG PNG DXF/DWG
+```
+
+The most important design decision is that **FloorPlan JSON remains the canonical representation of the drawing**.
+
+Konva is responsible for:
+
+- rendering
+- mouse interaction
+- selection
+- visual editing
+- zoom/pan
+
+It is not responsible for defining the application's data model.
+
+This makes the easier to extend and provides a clean path toward:
+
+- DXF
+- DWG
+- backend storage
+- PostgreSQL
+- collaboration
+- advanced architectural objects
+- future 3D functionality
+
+## V1 Summary
+
+| Area                       | V1     |
+| -------------------------- | ------ |
+| 2D canvas                  | Yes    |
+| Walls                      | Yes    |
+| Doors                      | Yes    |
+| Windows                    | Yes    |
+| Rooms                      | Yes    |
+| Dimensions                 | Yes    |
+| Measurement                | Yes    |
+| Text                       | Yes    |
+| Grid                       | Yes    |
+| Snap                       | Yes    |
+| Orthogonal mode            | Yes    |
+| Zoom/Pan                   | Yes    |
+| Layers                     | Yes    |
+| Undo/Redo                  | Yes    |
+| JSON save/load             | Yes    |
+| Local persistence          | Yes    |
+| PNG export                 | Yes    |
+| SVG export                 | Yes    |
+| DXF architecture           | Yes    |
+| DWG architecture           | Yes    |
+| Full AutoCAD replacement   | No     |
+| 3D                         | No     |
+| Structural design          | No     |
+| MEP design                 | No     |
+| Advanced DWG compatibility | Future |
