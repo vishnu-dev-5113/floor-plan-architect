@@ -1,6 +1,6 @@
 # Floor Plan Architect
 
-Build a 2D House Plan / CAD-Style Floor Plan Editor — V1 POC
+Build a 2D House Plan / CAD-Style Floor Plan Editor
 
 Build a desktop-first web application for creating, editing, viewing, saving, and exporting 2D architectural house/floor plans.
 
