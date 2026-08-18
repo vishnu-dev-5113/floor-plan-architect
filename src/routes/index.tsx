@@ -1,24 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { EditorShell } from "@/components/editor/EditorShell";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "PlanForge — 2D House Plan & CAD Floor Plan Editor" },
+      {
+        name: "description",
+        content:
+          "Draft walls, doors, windows, rooms and dimensions on a millimetre-accurate CAD grid, then export to JSON, SVG, PNG or DXF.",
+      },
+      { property: "og:title", content: "PlanForge — 2D House Plan & CAD Floor Plan Editor" },
+      {
+        property: "og:description",
+        content:
+          "A browser-based CAD-style floor plan editor with snapping, layers, undo/redo and multi-format export.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: EditorShell,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
